@@ -12,14 +12,13 @@ import java.util.Optional;
 @Service
 public class ClientService {
 
-    // Inyección del repositorio de clientes
-    @Autowired
-    private ClientRepository repository;
+    private final ClientRepository repository;
 
-    // Constructor para la inyección de dependencias
+    @Autowired
     public ClientService(ClientRepository repository) {
         this.repository = repository;
     }
+
 
     // Obtener todos los clientes
     public List<Client> getAllClients() {
@@ -37,14 +36,37 @@ public class ClientService {
     }
 
     // Eliminar un cliente por ID
-    public void deleteClient(Long id) {
-        repository.deleteById(id);
+    public boolean deleteClient(Long id) {
+        if (repository.existsById(id)) {
+            repository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
     // Obtener todas las ventas de un cliente
-    public List<Sale> getSalesByClient(Long clientId) {
-        Optional<Client> client = repository.findById(clientId);
-        return client.map(Client::getSales).orElse(null);
+    public Optional<List<Sale>> getSalesByClient(Long clientId) {
+        return repository.findById(clientId)
+                .map(Client::getSales);
+    }
+
+    // Actualizar un cliente por ID
+    public Optional<Client> updateClient(Long id, Client clientDetails) {
+        return repository.findById(id).map(client -> {
+            client.setFirstName(clientDetails.getFirstName());
+            client.setLastName(clientDetails.getLastName());
+            client.setDni(clientDetails.getDni());
+            client.setBirthDate(clientDetails.getBirthDate());
+            return repository.save(client);
+        });
+    }
+
+    // Obtener una venta específica de un producto realizado por un cliente
+    public Optional<Sale> getPurchaseOfProduct(Long clientId, Long productId) {
+        return repository.findById(clientId)
+                .flatMap(client -> client.getSales().stream()
+                        .filter(sale -> sale.getProducts().stream()
+                                .anyMatch(product -> product.getId().equals(productId)))
+                        .findFirst());
     }
 }
-

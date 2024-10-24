@@ -2,6 +2,8 @@ package com.entrega2.example.repositories;
 
 import com.entrega2.example.entities.Client;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface ClientRepository extends JpaRepository<Client, Long> { }
-
+@Repository
+public interface ClientRepository extends JpaRepository<Client, Long> {
+}

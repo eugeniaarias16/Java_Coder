@@ -1,12 +1,27 @@
 services:
   db:
     image: mysql:latest
-    restart: always
+    container_name: javacoder-db-1
     environment:
-      - MYSQL_USER=euge
-      - MYSQL_PASSWORD=root
-      - MYSQL_ROOT_PASSWORD=root
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: example
+      MYSQL_USER: euge
+      MYSQL_PASSWORD: root
     ports:
       - "3306:3306"
-    volumes:
-      - ./mysql_data:/var/lib/mysql
+    networks:
+      - javacoder-net
+
+  app:
+    image: openjdk:11
+    container_name: javacoder-app
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
+    networks:
+      - javacoder-net
+
+networks:
+  javacoder-net:
+    driver: bridge
