@@ -28,6 +28,7 @@ public class Receipt {
 
     private LocalDate date;
 
+    @Getter
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "receipt_id")
     private List<ReceiptLine> lines;
@@ -39,4 +40,5 @@ public class Receipt {
         this.date = date;
         this.lines = lines;
     }
+
 }

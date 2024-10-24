@@ -3,6 +3,8 @@ package com.entrega2.example.services;
 import com.entrega2.example.entities.Client;
 import com.entrega2.example.entities.Sale;
 import com.entrega2.example.repositories.ClientRepository;
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -62,11 +64,19 @@ public class ClientService {
     }
 
     // Obtener una venta específica de un producto realizado por un cliente
+    // Obtener una venta específica de un producto realizado por un cliente
     public Optional<Sale> getPurchaseOfProduct(Long clientId, Long productId) {
         return repository.findById(clientId)
-                .flatMap(client -> client.getSales().stream()
-                        .filter(sale -> sale.getProducts().stream()
-                                .anyMatch(product -> product.getId().equals(productId)))
-                        .findFirst());
+                .map(client -> {
+                    if (client.getSales() == null) {
+                        return null; // No hay ventas
+                    }
+                    return client.getSales().stream()
+                            .filter(sale -> sale.getProducts() != null && sale.getProducts().stream()
+                                    .anyMatch(product -> product.getId().equals(productId)))
+                            .findFirst()
+                            .orElse(null);
+                });
     }
+
 }

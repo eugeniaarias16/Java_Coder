@@ -1,17 +1,19 @@
 package com.entrega2.example.services;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import com.entrega2.example.repositories.ClientRepository;
-import com.entrega2.example.repositories.ProductRepository;
-import com.entrega2.example.repositories.ReceiptRepository;
-import com.entrega2.example.entities.Receipt;
+import com.entrega2.example.dto.ClientDTO;
+import com.entrega2.example.dto.LineItemDTO;
 import com.entrega2.example.dto.ReceiptRequest;
-import com.entrega2.example.dto.ClientDTO; // Asegúrate de importar ClientDTO
 import com.entrega2.example.entities.Client;
 import com.entrega2.example.entities.Product;
+import com.entrega2.example.entities.Receipt;
 import com.entrega2.example.entities.ReceiptLine;
-import com.entrega2.example.dto.LineItemDTO;
+import com.entrega2.example.repositories.ClientRepository;
+
+
+import com.entrega2.example.repositories.ProductRepository;
+import com.entrega2.example.repositories.ReceiptRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -34,51 +36,53 @@ public class ReceiptService {
     @Transactional
     public Receipt createReceipt(ReceiptRequest receiptRequest) {
         // Validar que el cliente exista
-        Client client = clientRepository.findById(receiptRequest.getClient().getId()) // Cambiado de getClientId() a getId()
+        Client client = clientRepository.findById(receiptRequest.getClient().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado"));
 
-        double totalAmount = 0.0;
+        // Validar que la lista de productos no esté vacía
+        if (receiptRequest.getLineItems().isEmpty()) {
+            throw new IllegalArgumentException("La lista de productos no puede estar vacía");
+        }
 
-        // Crear las líneas del recibo
+        double totalAmount = 0.0;
         List<ReceiptLine> receiptLines = new ArrayList<>();
 
+        // Crear las líneas del recibo
         for (LineItemDTO lineItem : receiptRequest.getLineItems()) {
-            // Validar que el producto exista
-            Product product = productRepository.findById(lineItem.getProduct().getProductId())
+            Product product = productRepository.findById(lineItem.getProductId())
                     .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
 
-            // Reducir el stock del producto usando el método decreaseStock
-            product.decreaseStock(lineItem.getQuantity());
-            productRepository.save(product);
 
-            // Calcular el subtotal para este producto
-            double lineTotal = lineItem.getQuantity() * product.getPrice();
-            totalAmount += lineTotal;
+            // Verificar si hay suficiente stock del producto
+            if (product.getStock() < lineItem.getQuantity()) {
+                throw new IllegalArgumentException("No hay suficiente stock para el producto: " + product.getName());
+            }
+
+            // Reducir el stock del producto
+            product.decreaseStock(lineItem.getQuantity());
+            totalAmount += lineItem.getQuantity() * product.getPrice();
 
             // Crear la línea del recibo
             ReceiptLine receiptLine = new ReceiptLine();
             receiptLine.setProduct(product);
             receiptLine.setQuantity(lineItem.getQuantity());
-            receiptLine.setLineTotal(lineTotal);
+            receiptLine.setLineTotal(lineItem.getQuantity() * product.getPrice());
             receiptLines.add(receiptLine);
         }
 
-        // Crear el recibo usando el constructor parametrizado
+        // Crear y guardar el recibo
         Receipt receipt = new Receipt(client, totalAmount, LocalDate.now(), receiptLines);
+        Receipt savedReceipt = receiptRepository.save(receipt);
 
-        // Guardar el recibo en la base de datos
-        receiptRepository.save(receipt);
+        // Guardar los productos con el stock actualizado
+        productRepository.saveAll(receiptLines.stream().map(ReceiptLine::getProduct).toList());
 
-        return receipt;
+        return savedReceipt;
     }
 
     // Buscar recibos por fecha
     public List<Receipt> findReceiptsByDate(LocalDate date) {
-        List<Receipt> receipts = receiptRepository.findByDate(date);
-        if (receipts.isEmpty()) {
-            throw new IllegalArgumentException("No se encontraron recibos para la fecha proporcionada");
-        }
-        return receipts;
+        return receiptRepository.findByDate(date);
     }
 
     // Gestionar devoluciones y aumentar el stock de los productos
@@ -90,9 +94,10 @@ public class ReceiptService {
 
         // Aumentar el stock de cada producto en las líneas del recibo
         for (ReceiptLine line : receipt.getLines()) {
-            Product product = line.getProduct();
-            product.increaseStock(line.getQuantity()); // Incrementar el stock
-            productRepository.save(product); // Guardar cambios
+            line.getProduct().increaseStock(line.getQuantity());
         }
+
+        // Guardar los productos actualizados
+        productRepository.saveAll(receipt.getLines().stream().map(ReceiptLine::getProduct).toList());
     }
 }

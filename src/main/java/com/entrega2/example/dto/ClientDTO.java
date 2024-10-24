@@ -1,13 +1,17 @@
 package com.entrega2.example.dto;
 
 import com.entrega2.example.entities.Client;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
 
-@Setter
 @Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ClientDTO {
     private Long id;
     private String firstName;
@@ -15,25 +19,15 @@ public class ClientDTO {
     private Integer dni;
     private LocalDate birthDate;
 
-    // Constructor vacío
-    public ClientDTO() {}
-
     // Constructor para convertir de Client a ClientDTO
     public ClientDTO(Client client) {
-        this.id = client.getId();
-        this.firstName = client.getFirstName();
-        this.lastName = client.getLastName();
-        this.dni = client.getDni();
-        this.birthDate = client.getBirthDate();
-    }
-
-    // Constructor con parámetros
-    public ClientDTO(Long id, String firstName, String lastName, Integer dni, LocalDate birthDate) {
-        this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.dni = dni;
-        this.birthDate = birthDate;
+        if (client != null) {
+            this.id = client.getId();
+            this.firstName = client.getFirstName();
+            this.lastName = client.getLastName();
+            this.dni = client.getDni();
+            this.birthDate = client.getBirthDate();
+        }
     }
 
     // Método para convertir de ClientDTO a Client
@@ -45,5 +39,11 @@ public class ClientDTO {
         client.setDni(this.dni);
         client.setBirthDate(this.birthDate);
         return client;
+    }
+
+
+    // Método explícito para establecer el id (si Lombok no funciona)
+    public void setId(Long id) {
+        this.id = id;
     }
 }

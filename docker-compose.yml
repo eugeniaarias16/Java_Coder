@@ -1,7 +1,18 @@
 services:
-  db:
+  example-app:
+    image: openjdk:11-jre-slim
+    container_name: example-app
+    volumes:
+      - ./target/example-0.0.1-SNAPSHOT.jar:/app/app.jar
+    ports:
+      - "5000:5000"
+    command: ["java", "-jar", "/app/app.jar"]
+    depends_on:
+      - example-db
+
+  example-db:
     image: mysql:latest
-    container_name: javacoder-db-1
+    container_name: example-db
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: example
@@ -9,19 +20,3 @@ services:
       MYSQL_PASSWORD: root
     ports:
       - "3306:3306"
-    networks:
-      - javacoder-net
-
-  app:
-    image: openjdk:11
-    container_name: javacoder-app
-    depends_on:
-      - db
-    ports:
-      - "5000:5000"
-    networks:
-      - javacoder-net
-
-networks:
-  javacoder-net:
-    driver: bridge

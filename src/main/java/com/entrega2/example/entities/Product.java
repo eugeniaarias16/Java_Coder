@@ -22,6 +22,7 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String name; // Añadido para solucionar el problema de `getName()`
     private String description;
     private int stock;
     private double price;
@@ -43,7 +44,12 @@ public class Product {
         this.stock -= amount;
     }
 
+    // Métodos explícitos para obtener nombre y precio
     public String getName() {
-        return description; // Si `name` es el mismo que `description`
+        return name;
+    }
+
+    public double getPrice() {
+        return price;
     }
 }
